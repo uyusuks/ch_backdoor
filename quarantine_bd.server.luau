@@ -1,4 +1,4 @@
---!strict
+--!nonstrict
 
 local check = plugin:CreateToolbar("check") :: PluginToolbar
 
@@ -46,10 +46,10 @@ local express: expressType = function(str)
 
 	local str_1, operator, str_2 = str:match("(%d+)%s*([+*/-])%s*(%d+)")
 	
-	if not (str_1 and operator and str_2) then return 0 end
+    local int_1 = tonumber(str_1)
+    local int_2 = tonumber(str_2)
 
-	local int_1 = tonumber(str_1)
-	local int_2 = tonumber(str_2)
+	if not (int_1 and operator and int_2) then return 0 end
 	
 	--if not table.find({"+", "*", "/", "-"}, operator) then return 0 end
 	
@@ -64,6 +64,13 @@ check_btn(check).Click:Connect(function()
 
 		local src = self.Source :: string
 
+        local variables: {[string]: number} = {}
+
+		for defined_name, defined_value in src:gmatch("local%s*(%w+)%s*=%s*(%d+)") do
+
+		    variables[defined_name] = defined_value
+		end
+
 		for str in src:gmatch("char%.string%((.-)%)") do
 
 			local log = self.Name .. ": " :: string
@@ -71,27 +78,18 @@ check_btn(check).Click:Connect(function()
 
 			for str in str:gmatch("%d+") do
 
-				local int = express(str)
+				local expressed_int = express(str)
 
-				decoded_format ..= string.char(int)
+				decoded_format ..= string.char(expressed_int)
 				log ..= "numeric literal/"
 			end
+
+            for potential_var in str:gmatch("%w+") do
+                
+                if not table.find(variables, potential_var) then break end
+
+				log ..= "var manip/"
+            end
 		end
-
-		-- local variables = {}
-
-		--         for defined_name, value in src:gmatch("local%s*(%w+)%s*=%s*(%d+)") do
-
-		--             variables[defined_name] = tonumber(value)
-		-- end
 	end
 end)
-
--- local https = "HttpService:"
-
--- local httpMethods = {
-
---     https .. "GetAsync%s*%(",
---     https .. "PostAsync%s*%(",
---     https .. "RequestAsync%s*%(",
--- }
